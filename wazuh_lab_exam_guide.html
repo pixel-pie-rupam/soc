@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wazuh Lab Exam Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --accent: #00d4aa;
+    --accent2: #58a6ff;
+    --accent3: #f0883e;
+    --accent4: #bc8cff;
+    --danger: #ff7b72;
+    --success: #3fb950;
+    --warning: #d29922;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; }
+
+  .shell { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  /* HEADER */
+  .header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+  .header-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,212,170,0.1); border: 1px solid rgba(0,212,170,0.3); color: var(--accent); font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }
+  .header-badge::before { content: '●'; font-size: 8px; animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--text2); margin-top: 6px; font-size: 13px; }
+  .machine-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1.2rem; }
+  .machine-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+  .machine-card .role { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 4px; }
+  .machine-card .name { font-weight: 600; font-size: 13px; color: var(--accent2); }
+  .machine-card .ip { font-family: var(--mono); font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+  /* PROGRESS */
+  .progress-bar-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 2rem; }
+  .progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; color: var(--text2); }
+  .progress-label span:last-child { font-family: var(--mono); color: var(--accent); }
+  .progress-track { background: var(--bg); border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.4s ease; width: 0%; }
+  .steps-dots { display: flex; gap: 6px; margin-top: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--border); background: transparent; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+  .dot.done { background: var(--accent); border-color: var(--accent); }
+  .dot.active { border-color: var(--accent2); background: rgba(88,166,255,0.2); }
+
+  /* STEPS NAV */
+  .steps-nav { display: flex; flex-direction: column; gap: 4px; margin-bottom: 1.5rem; }
+  .step-btn { display: flex; align-items: center; gap: 10px; background: none; border: 1px solid transparent; border-radius: 8px; padding: 10px 14px; cursor: pointer; text-align: left; transition: all 0.2s; color: var(--text2); font-family: var(--sans); font-size: 13px; width: 100%; }
+  .step-btn:hover { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .step-btn.active { background: var(--surface2); border-color: var(--accent2); color: var(--text); }
+  .step-btn.completed { color: var(--success); }
+  .step-btn.completed .step-num { background: var(--success); color: #000; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .step-btn.active .step-num { background: var(--accent2); border-color: var(--accent2); color: #000; }
+  .step-label { flex: 1; }
+  .step-tag { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+  .tag-linux { color: var(--accent); border-color: rgba(0,212,170,0.3); }
+  .tag-windows { color: var(--accent2); border-color: rgba(88,166,255,0.3); }
+  .tag-manager { color: var(--accent4); border-color: rgba(188,140,255,0.3); }
+
+  /* CONTENT PANEL */
+  .content-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .panel-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .panel-header h2 { font-size: 15px; font-weight: 600; }
+  .panel-header .step-badge { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .panel-body { padding: 20px; }
+
+  /* STEP CONTENT */
+  .step-section { display: none; }
+  .step-section.active { display: block; }
+  .where-box { background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.2); border-radius: 6px; padding: 10px 14px; margin-bottom: 1.2rem; font-size: 12px; color: var(--accent); }
+  .where-box strong { display: block; font-size: 11px; color: var(--text3); margin-bottom: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .substep { margin-bottom: 1.5rem; }
+  .substep-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .substep-title .num { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .substep p { color: var(--text2); font-size: 13px; margin-bottom: 8px; }
+
+  /* CODE BLOCK */
+  .code-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 8px 0; }
+  .code-header { background: var(--surface2); padding: 6px 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+  .code-header .lang { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .copy-btn { background: none; border: 1px solid var(--border); color: var(--text3); font-size: 10px; font-family: var(--mono); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--success); border-color: var(--success); }
+  .code-body { padding: 12px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre; overflow-x: auto; color: #a8d8a8; }
+  .code-body .comment { color: var(--text3); }
+  .code-body .kw { color: var(--accent4); }
+  .code-body .str { color: var(--accent3); }
+
+  /* XML BLOCK */
+  .xml-block { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.8; overflow-x: auto; margin: 8px 0; }
+  .xml-tag { color: var(--accent2); }
+  .xml-attr { color: var(--accent4); }
+  .xml-val { color: var(--accent3); }
+  .xml-text { color: #a8d8a8; }
+  .xml-comment { color: var(--text3); }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 10px 0; }
+  .data-table th { background: var(--surface2); color: var(--text2); font-weight: 500; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .data-table td { padding: 8px 12px; border-bottom: 1px solid rgba(48,54,61,0.5); color: var(--text2); }
+  .data-table td code { font-family: var(--mono); font-size: 11px; color: var(--accent3); background: var(--bg); padding: 1px 5px; border-radius: 3px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ALERT / NOTE BOX */
+  .note-box { border-radius: 6px; padding: 10px 14px; font-size: 12px; margin: 10px 0; }
+  .note-box.warn { background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.3); color: #d29922; }
+  .note-box.info { background: rgba(88,166,255,0.1); border: 1px solid rgba(88,166,255,0.3); color: var(--accent2); }
+  .note-box.danger { background: rgba(255,123,114,0.1); border: 1px solid rgba(255,123,114,0.3); color: var(--danger); }
+  .note-box strong { display: block; margin-bottom: 3px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* VERIFY BOX */
+  .verify-box { background: rgba(63,185,80,0.07); border: 1px solid rgba(63,185,80,0.25); border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+  .verify-box .vt { font-size: 11px; color: var(--success); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .verify-box p { font-size: 12px; color: rgba(63,185,80,0.8); }
+
+  /* NAV BUTTONS */
+  .nav-row { display: flex; justify-content: space-between; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .nav-btn { background: none; border: 1px solid var(--border); color: var(--text2); font-family: var(--sans); font-size: 13px; padding: 8px 18px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+  .nav-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .nav-btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  .nav-btn.primary:hover { background: #00e8bb; }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* MARK DONE */
+  .mark-done-btn { display: flex; align-items: center; gap: 6px; background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3); color: var(--success); font-family: var(--sans); font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; margin-top: 1rem; transition: all 0.2s; }
+  .mark-done-btn:hover { background: rgba(63,185,80,0.2); }
+  .mark-done-btn.done { background: var(--success); color: #000; border-color: var(--success); }
+
+  /* ===================== TEST RESULT SECTION ===================== */
+  .test-result-section { margin-top: 2.5rem; }
+  .test-result-section.hidden { display: none; }
+  .tr-header { background: var(--surface); border: 1px solid var(--border); border-radius: 10px 10px 0 0; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: none; }
+  .tr-header h2 { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .tr-header h2 span { color: var(--accent); }
+  .tr-timestamp { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+  .tr-body { background: var(--bg); border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; padding: 20px; }
+
+  .score-display { display: flex; align-items: center; gap: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 1.5rem; }
+  .score-circle { width: 70px; height: 70px; border-radius: 50%; border: 3px solid var(--accent); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+  .score-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+  .score-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; }
+  .score-details { flex: 1; }
+  .score-details h3 { font-size: 15px; font-weight: 600; color: var(--text); }
+  .score-details p { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .score-meta { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .score-meta .sm-item { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border); color: var(--text3); background: var(--surface2); }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .result-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .result-item.pass { border-left: 3px solid var(--success); }
+  .result-item.fail { border-left: 3px solid var(--danger); }
+  .result-item.warn { border-left: 3px solid var(--warning); }
+  .ri-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .ri-title { font-size: 12px; font-weight: 600; color: var(--text); }
+  .ri-status { font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 10px; font-weight: 700; }
+  .ri-status.pass { background: rgba(63,185,80,0.15); color: var(--success); }
+  .ri-status.fail { background: rgba(255,123,114,0.15); color: var(--danger); }
+  .ri-status.warn { background: rgba(210,153,34,0.15); color: var(--warning); }
+  .ri-detail { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  .attack-results { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem; }
+  .ar-header { padding: 10px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text2); display: flex; justify-content: space-between; }
+  .ar-row { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(48,54,61,0.4); gap: 10px; }
+  .ar-row:last-child { border-bottom: none; }
+  .ar-tech { font-family: var(--mono); font-size: 11px; color: var(--accent4); width: 90px; flex-shrink: 0; }
+  .ar-name { flex: 1; font-size: 12px; color: var(--text); }
+  .ar-rule { font-family: var(--mono); font-size: 10px; color: var(--text3); width: 70px; text-align: right; }
+  .ar-badge { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 700; flex-shrink: 0; }
+  .ar-badge.detected { background: rgba(63,185,80,0.15); color: var(--success); }
+  .ar-badge.missed { background: rgba(255,123,114,0.15); color: var(--danger); }
+  .ar-badge.pending { background: rgba(139,148,158,0.15); color: var(--text3); }
+
+  .timeline { border-left: 2px solid var(--border); margin-left: 8px; padding-left: 16px; }
+  .tl-item { position: relative; margin-bottom: 14px; }
+  .tl-item::before { content: ''; position: absolute; left: -21px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+  .tl-item.done::before { background: var(--success); }
+  .tl-item.active::before { background: var(--accent2); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .tl-item.skipped::before { background: var(--danger); }
+  .tl-time { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+  .tl-text { font-size: 12px; color: var(--text2); }
+  .tl-text strong { color: var(--text); font-weight: 500; }
+
+  .summary-footer { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; display: flex; gap: 20px; flex-wrap: wrap; }
+  .sf-stat { text-align: center; }
+  .sf-num { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+  .sf-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .sf-stat.green .sf-num { color: var(--success); }
+  .sf-stat.red .sf-num { color: var(--danger); }
+  .sf-stat.blue .sf-num { color: var(--accent2); }
+  .sf-stat.yellow .sf-num { color: var(--warning); }
+  .sf-divider { width: 1px; background: var(--border); }
+
+  /* LAYOUT */
+  .two-col { display: grid; grid-template-columns: 220px 1fr; gap: 1.5rem; }
+  @media(max-width:640px) { .two-col { grid-template-columns: 1fr; } .result-grid { grid-template-columns: 1fr; } .machine-grid { grid-template-columns: 1fr; } }
+
+  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 10px; }
+
+  /* TAB toggle for results */
+  .tab-row { display: flex; gap: 4px; margin-bottom: 1.2rem; }
+  .tab { background: none; border: 1px solid var(--border); color: var(--text3); font-family: var(--sans); font-size: 12px; padding: 5px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+  .tab:hover { color: var(--text); border-color: var(--text3); }
+  .tab.active { background: var(--surface2); border-color: var(--accent2); color: var(--accent2); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">LAB ACTIVE</div>
+    <h1>Wazuh <span>Exam Lab</span> Guide</h1>
+    <p>Syslog · Sysmon · Atomic Red Team · ATT&CK Emulation</p>
+    <div class="machine-grid">
+      <div class="machine-card">
+        <div class="role">Machine 1 · Linux</div>
+        <div class="name">Wazuh Manager</div>
+        <div class="ip">e.g. 192.168.x.x</div>
+      </div>
+      <div class="machine-card">
+        <div class="role">Machine 2 · Linux</div>
+        <div class="name">Linux Agent</div>
+        <div class="ip">e.g. 192.168.x.x</div>
+      </div>
+      <div class="machine-card">
+        <div class="role">Machine 3 · Windows</div>
+        <div class="name">Windows Agent</div>
+        <div class="ip">e.g. 192.168.x.x</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span>Lab Progress</span>
+      <span id="prog-text">0 / 7 steps</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+    <div class="steps-dots" id="dots-row"></div>
+  </div>
+
+  <!-- TWO COLUMN LAYOUT -->
+  <div class="two-col">
+
+    <!-- LEFT NAV -->
+    <div>
+      <div class="section-title">Steps</div>
+      <div class="steps-nav" id="steps-nav"></div>
+    </div>
+
+    <!-- RIGHT CONTENT -->
+    <div>
+      <div class="content-panel">
+        <div class="panel-header">
+          <h2 id="panel-title">Step 1 — Configure Syslog</h2>
+          <span class="step-badge" id="panel-badge">STEP 1 OF 7</span>
+        </div>
+        <div class="panel-body" id="panel-body">
+          <!-- Dynamic content here -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end two-col -->
+
+  <!-- TEST RESULT SECTION -->
+  <div class="test-result-section hidden" id="test-result-section">
+    <div class="tr-header">
+      <h2>🧪 <span>Lab Test</span> Results</h2>
+      <span class="tr-timestamp" id="result-timestamp"></span>
+    </div>
+    <div class="tr-body">
+      <div class="tab-row">
+        <button class="tab active" onclick="switchTab('summary')">Summary</button>
+        <button class="tab" onclick="switchTab('attacks')">ATT&CK Tests</button>
+        <button class="tab" onclick="switchTab('timeline')">Timeline</button>
+      </div>
+
+      <!-- SUMMARY TAB -->
+      <div class="tab-panel active" id="tab-summary">
+        <div class="score-display">
+          <div class="score-circle">
+            <div class="score-num" id="score-pct">0%</div>
+            <div class="score-label">Score</div>
+          </div>
+          <div class="score-details">
+            <h3 id="score-title">Lab not yet completed</h3>
+            <p id="score-desc">Complete all 7 steps to generate your result.</p>
+            <div class="score-meta">
+              <span class="sm-item" id="sm-steps">0/7 steps</span>
+              <span class="sm-item" id="sm-detections">0/5 detections</span>
+              <span class="sm-item" id="sm-grade">Grade: —</span>
+            </div>
+          </div>
+        </div>
+        <div class="result-grid" id="result-grid">
+          <!-- Populated by JS -->
+        </div>
+        <div class="summary-footer" id="summary-footer">
+          <div class="sf-stat green"><div class="sf-num" id="sf-pass">0</div><div class="sf-lbl">Passed</div></div>
+          <div class="sf-divider"></div>
+          <div class="sf-stat red"><div class="sf-num" id="sf-fail">0</div><div class="sf-lbl">Failed</div></div>
+          <div class="sf-divider"></div>
+          <div class="sf-stat blue"><div class="sf-num" id="sf-steps">0</div><div class="sf-lbl">Steps Done</div></div>
+          <div class="sf-divider"></div>
+          <div class="sf-stat yellow"><div class="sf-num" id="sf-pending">0</div><div class="sf-lbl">Pending</div></div>
+        </div>
+      </div>
+
+      <!-- ATTACKS TAB -->
+      <div class="tab-panel" id="tab-attacks">
+        <div class="attack-results">
+          <div class="ar-header"><span>Technique</span><span>Detection Status</span></div>
+          <div id="attack-rows"><!-- Populated --></div>
+        </div>
+      </div>
+
+      <!-- TIMELINE TAB -->
+      <div class="tab-panel" id="tab-timeline">
+        <div class="timeline" id="timeline-rows"><!-- Populated --></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- end shell -->
+
+<script>
+const STEPS = [
+  {
+    id: 1,
+    title: 'Configure Syslog',
+    tag: 'Manager',
+    tagClass: 'tag-manager',
+    where: 'SSH into Wazuh Manager (Linux machine)',
+    goal: 'Makes the Manager listen on port 514 to receive syslog from other devices.',
+    substeps: [
+      {
+        title: 'Find your IPs first',
+        content: `Run on <strong>Wazuh Manager</strong>:`,
+        code: { lang: 'bash', text: 'ip a' },
+        note: { type: 'info', text: 'Look for the <code>inet</code> address under eth0 or ens33. That is your Manager private IP. Do the same on Linux Agent.' }
+      },
+      {
+        title: 'Edit the main config file',
+        content: `Open the Wazuh Manager config:`,
+        code: { lang: 'bash', text: 'sudo nano /var/ossec/etc/ossec.conf' }
+      },
+      {
+        title: 'Add the syslog remote block',
+        content: `Scroll to the bottom. Find <code>&lt;/ossec_config&gt;</code> and paste the block JUST BEFORE it:`,
+        xml: `<span class="xml-tag">&lt;remote&gt;</span>
+  <span class="xml-tag">&lt;connection&gt;</span><span class="xml-text">syslog</span><span class="xml-tag">&lt;/connection&gt;</span>
+  <span class="xml-tag">&lt;port&gt;</span><span class="xml-text">514</span><span class="xml-tag">&lt;/port&gt;</span>
+  <span class="xml-tag">&lt;protocol&gt;</span><span class="xml-text">tcp</span><span class="xml-tag">&lt;/protocol&gt;</span>
+  <span class="xml-tag">&lt;allowed-ips&gt;</span><span class="xml-text">LINUX_AGENT_IP/24</span><span class="xml-tag">&lt;/allowed-ips&gt;</span>
+  <span class="xml-tag">&lt;local_ip&gt;</span><span class="xml-text">MANAGER_IP</span><span class="xml-tag">&lt;/local_ip&gt;</span>
+<span class="xml-tag">&lt;/remote&gt;</span>`,
+        table: [
+          ['allowed-ips', 'Private IP of Linux Agent + /24', '192.168.1.50/24'],
+          ['local_ip', 'Private IP of Wazuh Manager', '192.168.1.10']
+        ]
+      },
+      {
+        title: 'Save, then restart the Manager',
+        content: `Press <code>Ctrl+X → Y → Enter</code>, then restart:`,
+        code: { lang: 'bash', text: 'sudo systemctl restart wazuh-manager' }
+      },
+      {
+        title: 'Verify port 514 is listening',
+        code: { lang: 'bash', text: 'sudo ss -tlnp | grep 514' },
+        verify: 'You should see wazuh-remoted listening on port 514.'
+      },
+      {
+        title: 'Send a test syslog from Linux Agent',
+        content: `On the Linux Agent, run:`,
+        code: { lang: 'bash', text: 'logger -n MANAGER_IP -P 514 --tcp "Test syslog from Linux Agent"' },
+        note: { type: 'info', text: 'Then on Manager: <code>sudo tail -f /var/ossec/logs/archives/archives.log</code> — you should see the test message.' }
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: 'Install Sysmon on Windows',
+    tag: 'Windows',
+    tagClass: 'tag-windows',
+    where: 'Windows Agent machine — PowerShell as Administrator',
+    goal: 'Installs Sysmon so Windows logs detailed security events that Wazuh can read.',
+    substeps: [
+      {
+        title: 'Open PowerShell as Administrator',
+        content: `<strong>Windows key → type PowerShell → Right-click → Run as administrator</strong>`
+      },
+      {
+        title: 'Create working folder',
+        code: { lang: 'powershell', text: 'mkdir C:\\Tools\ncd C:\\Tools' }
+      },
+      {
+        title: 'Download Sysmon',
+        code: { lang: 'powershell', text: 'Invoke-WebRequest -Uri "https://download.sysinternals.com/files/Sysmon.zip" -OutFile "C:\\Tools\\Sysmon.zip"' }
+      },
+      {
+        title: 'Extract Sysmon',
+        code: { lang: 'powershell', text: 'Expand-Archive -Path "C:\\Tools\\Sysmon.zip" -DestinationPath "C:\\Tools\\Sysmon" -Force' }
+      },
+      {
+        title: 'Download the Sysmon config (MITRE-mapped)',
+        code: { lang: 'powershell', text: 'Invoke-WebRequest -Uri "https://wazuh.com/resources/blog/emulation-of-attack-techniques-and-detection-with-wazuh/sysmonconfig.xml" -OutFile "C:\\Tools\\Sysmon\\sysmonconfig.xml"' }
+      },
+      {
+        title: 'Install Sysmon with config',
+        code: { lang: 'powershell', text: 'cd C:\\Tools\\Sysmon\n.\\Sysmon64.exe -accepteula -i sysmonconfig.xml' },
+        verify: 'You should see: Sysmon64 installed → SysmonDrv started → Sysmon64 started.'
+      },
+      {
+        title: 'Verify Sysmon is running',
+        code: { lang: 'powershell', text: 'Get-Service Sysmon64' },
+        verify: 'Status should show: Running'
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: 'Forward Sysmon Events',
+    tag: 'Windows',
+    tagClass: 'tag-windows',
+    where: 'Windows Agent — edit ossec.conf with Notepad as Administrator',
+    goal: 'Tells the Wazuh Agent to read Sysmon events and send them to the Manager.',
+    substeps: [
+      {
+        title: 'Open Notepad as Administrator',
+        content: `Windows key → Notepad → Right-click → Run as Administrator<br>Then: <strong>File → Open → C:\\Program Files (x86)\\ossec-agent\\ossec.conf</strong><br>(Change file type dropdown to: All Files)`
+      },
+      {
+        title: 'Add the Sysmon localfile block',
+        content: `Find <code>&lt;/ossec_config&gt;</code> at the bottom. Paste JUST BEFORE it:`,
+        xml: `<span class="xml-tag">&lt;localfile&gt;</span>
+  <span class="xml-tag">&lt;location&gt;</span><span class="xml-text">Microsoft-Windows-Sysmon/Operational</span><span class="xml-tag">&lt;/location&gt;</span>
+  <span class="xml-tag">&lt;log_format&gt;</span><span class="xml-text">eventchannel</span><span class="xml-tag">&lt;/log_format&gt;</span>
+<span class="xml-tag">&lt;/localfile&gt;</span>`
+      },
+      {
+        title: 'Save and restart the Wazuh Agent',
+        code: { lang: 'powershell', text: 'Restart-Service -Name wazuh' }
+      },
+      {
+        title: 'Verify agent is running',
+        code: { lang: 'powershell', text: 'Get-Service wazuh' },
+        verify: 'Status should show: Running'
+      },
+      {
+        title: 'Verify Sysmon events reach the Manager',
+        content: `On the Manager, run:`,
+        code: { lang: 'bash', text: 'sudo tail -f /var/ossec/logs/archives/archives.log | grep -i sysmon' },
+        note: { type: 'info', text: 'Move mouse or open a program on Windows. Events should appear in Manager within seconds.' }
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: 'Install Atomic Red Team',
+    tag: 'Windows',
+    tagClass: 'tag-windows',
+    where: 'Windows Agent — PowerShell as Administrator',
+    goal: 'Installs ART so you can simulate real ATT&CK attacks.',
+    note_top: { type: 'danger', text: 'WARNING: Only do this on an isolated/disposable virtual machine. These are real attack simulations.' },
+    substeps: [
+      {
+        title: 'Set execution policy',
+        code: { lang: 'powershell', text: 'Set-ExecutionPolicy Bypass -Scope CurrentUser -Force' }
+      },
+      {
+        title: 'Enable TLS 1.2',
+        code: { lang: 'powershell', text: '[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12' }
+      },
+      {
+        title: 'Install Atomic Red Team (module + all atomics)',
+        code: { lang: 'powershell', text: "IEX (IWR 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing); Install-AtomicRedTeam -getAtomics" },
+        note: { type: 'warn', text: 'This downloads to C:\\AtomicRedTeam\\ and may take several minutes.' }
+      },
+      {
+        title: 'Import the ART module',
+        code: { lang: 'powershell', text: 'Import-Module "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1" -Force' },
+        note: { type: 'info', text: 'You must run this import command every time you open a new PowerShell window.' }
+      },
+      {
+        title: 'Verify ART is working',
+        code: { lang: 'powershell', text: 'Invoke-AtomicTest T1053.005 -ShowDetailsBrief' },
+        verify: 'You should see a list of available sub-tests for T1053.005.'
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: 'Add Detection Rules',
+    tag: 'Manager',
+    tagClass: 'tag-manager',
+    where: 'SSH into Wazuh Manager (Linux)',
+    goal: 'Creates rules that generate alerts when Sysmon detects ATT&CK techniques.',
+    substeps: [
+      {
+        title: 'Open the local rules file',
+        code: { lang: 'bash', text: 'sudo nano /var/ossec/etc/rules/local_rules.xml' }
+      },
+      {
+        title: 'Paste the 5 detection rules',
+        content: `Add this entire block inside the file (after any existing content):`,
+        xml: `<span class="xml-tag">&lt;group</span> <span class="xml-attr">name</span>=<span class="xml-val">"windows,sysmon,mitre,"</span><span class="xml-tag">&gt;</span>
+
+  <span class="xml-comment">&lt;!-- T1053.005 - Scheduled Task --&gt;</span>
+  <span class="xml-tag">&lt;rule</span> <span class="xml-attr">id</span>=<span class="xml-val">"115001"</span> <span class="xml-attr">level</span>=<span class="xml-val">"10"</span><span class="xml-tag">&gt;</span>
+    <span class="xml-tag">&lt;if_group&gt;</span>windows<span class="xml-tag">&lt;/if_group&gt;</span>
+    <span class="xml-tag">&lt;field</span> <span class="xml-attr">name</span>=<span class="xml-val">"win.eventdata.ruleName"</span> <span class="xml-attr">type</span>=<span class="xml-val">"pcre2"</span><span class="xml-tag">&gt;</span>technique_id=T1053<span class="xml-tag">&lt;/field&gt;</span>
+    <span class="xml-tag">&lt;description&gt;</span>MITRE T1053.005 - Scheduled Task<span class="xml-tag">&lt;/description&gt;</span>
+    <span class="xml-tag">&lt;mitre&gt;&lt;id&gt;</span>T1053<span class="xml-tag">&lt;/id&gt;&lt;/mitre&gt;</span>
+  <span class="xml-tag">&lt;/rule&gt;</span>
+
+  <span class="xml-comment">&lt;!-- T1574 - DLL Side-Loading --&gt;</span>
+  <span class="xml-tag">&lt;rule</span> <span class="xml-attr">id</span>=<span class="xml-val">"115002"</span> <span class="xml-attr">level</span>=<span class="xml-val">"10"</span><span class="xml-tag">&gt;</span>
+    <span class="xml-tag">&lt;field</span> <span class="xml-attr">name</span>=<span class="xml-val">"win.eventdata.ruleName"</span> <span class="xml-attr">type</span>=<span class="xml-val">"pcre2"</span><span class="xml-tag">&gt;</span>technique_id=T1574.002<span class="xml-tag">&lt;/field&gt;</span>
+    <span class="xml-tag">&lt;description&gt;</span>MITRE T1574 - DLL Side-Loading<span class="xml-tag">&lt;/description&gt;</span>
+  <span class="xml-tag">&lt;/rule&gt;</span>
+
+  <span class="xml-comment">&lt;!-- T1218.010 - Regsvr32 --&gt;</span>
+  <span class="xml-tag">&lt;rule</span> <span class="xml-attr">id</span>=<span class="xml-val">"115003"</span> <span class="xml-attr">level</span>=<span class="xml-val">"10"</span><span class="xml-tag">&gt;</span>
+    <span class="xml-tag">&lt;field</span> <span class="xml-attr">name</span>=<span class="xml-val">"win.eventdata.ruleName"</span> <span class="xml-attr">type</span>=<span class="xml-val">"pcre2"</span><span class="xml-tag">&gt;</span>technique_id=T1218.010<span class="xml-tag">&lt;/field&gt;</span>
+    <span class="xml-tag">&lt;description&gt;</span>MITRE T1218.010 - Regsvr32 Proxy Execution<span class="xml-tag">&lt;/description&gt;</span>
+  <span class="xml-tag">&lt;/rule&gt;</span>
+
+  <span class="xml-comment">&lt;!-- T1518.001 - Security Software Discovery --&gt;</span>
+  <span class="xml-tag">&lt;rule</span> <span class="xml-attr">id</span>=<span class="xml-val">"115004"</span> <span class="xml-attr">level</span>=<span class="xml-val">"10"</span><span class="xml-tag">&gt;</span>
+    <span class="xml-tag">&lt;field</span> <span class="xml-attr">name</span>=<span class="xml-val">"win.eventdata.ruleName"</span> <span class="xml-attr">type</span>=<span class="xml-val">"pcre2"</span><span class="xml-tag">&gt;</span>technique_id=T1518.001<span class="xml-tag">&lt;/field&gt;</span>
+    <span class="xml-tag">&lt;description&gt;</span>MITRE T1518.001 - Security Software Discovery<span class="xml-tag">&lt;/description&gt;</span>
+  <span class="xml-tag">&lt;/rule&gt;</span>
+
+  <span class="xml-comment">&lt;!-- T1548.002 - Bypass UAC (level 12 = high severity) --&gt;</span>
+  <span class="xml-tag">&lt;rule</span> <span class="xml-attr">id</span>=<span class="xml-val">"115005"</span> <span class="xml-attr">level</span>=<span class="xml-val">"12"</span><span class="xml-tag">&gt;</span>
+    <span class="xml-tag">&lt;field</span> <span class="xml-attr">name</span>=<span class="xml-val">"win.eventdata.ruleName"</span> <span class="xml-attr">type</span>=<span class="xml-val">"pcre2"</span><span class="xml-tag">&gt;</span>technique_id=T1548.002<span class="xml-tag">&lt;/field&gt;</span>
+    <span class="xml-tag">&lt;description&gt;</span>MITRE T1548.002 - UAC Bypass / Privilege Escalation<span class="xml-tag">&lt;/description&gt;</span>
+  <span class="xml-tag">&lt;/rule&gt;</span>
+
+<span class="xml-tag">&lt;/group&gt;</span>`
+      },
+      {
+        title: 'Save and restart Manager',
+        code: { lang: 'bash', text: 'sudo systemctl restart wazuh-manager' }
+      },
+      {
+        title: 'Check for rule errors',
+        code: { lang: 'bash', text: "sudo grep -i 'error' /var/ossec/logs/ossec.log | tail -10" },
+        verify: 'No errors related to your rules = you are good to proceed.'
+      }
+    ]
+  },
+  {
+    id: 6,
+    title: 'Run ATT&CK Tests',
+    tag: 'Windows',
+    tagClass: 'tag-windows',
+    where: 'Windows PowerShell + watch alerts.log on Manager simultaneously',
+    goal: 'Simulate real ATT&CK attacks to trigger Wazuh alerts.',
+    note_top: { type: 'info', text: 'Open 2 windows: PowerShell on Windows (run tests) + Manager SSH terminal watching: sudo tail -f /var/ossec/logs/alerts/alerts.log' },
+    substeps: [
+      {
+        title: 'Import ART module (every new PS session)',
+        code: { lang: 'powershell', text: 'Import-Module "C:\\AtomicRedTeam\\invoke-atomicredteam\\Invoke-AtomicRedTeam.psd1" -Force' }
+      },
+      {
+        title: 'Test 1: T1053.005 — Scheduled Task',
+        content: `Simulates an attacker creating a scheduled task for persistence:`,
+        code: { lang: 'powershell', text: 'Invoke-AtomicTest T1053.005\n# Wait 10-15 sec → expect rule 115001 alert on Manager\nInvoke-AtomicTest T1053.005 -Cleanup' }
+      },
+      {
+        title: 'Test 2: T1218.010 — Regsvr32',
+        content: `Simulates using a legitimate signed Windows binary to execute malicious code:`,
+        code: { lang: 'powershell', text: 'Invoke-AtomicTest T1218.010 -CheckPrereqs\nInvoke-AtomicTest T1218.010\n# expect rule 115003\nInvoke-AtomicTest T1218.010 -Cleanup' }
+      },
+      {
+        title: 'Test 3: T1518.001 — Security Software Discovery',
+        content: `Simulates an attacker discovering what security tools are installed:`,
+        code: { lang: 'powershell', text: 'Invoke-AtomicTest T1518.001\n# expect rule 115004\nInvoke-AtomicTest T1518.001 -Cleanup' }
+      },
+      {
+        title: 'Test 4: T1548.002 — Bypass UAC',
+        content: `Simulates bypassing User Account Control to escalate privileges:`,
+        code: { lang: 'powershell', text: 'Invoke-AtomicTest T1548.002 -GetPrereqs\nInvoke-AtomicTest T1548.002\n# expect rule 115005 (level 12 = high)\nInvoke-AtomicTest T1548.002 -Cleanup' }
+      },
+      {
+        title: 'Test 5: T1574.001 — DLL Side-Loading',
+        content: `Simulates hijacking a DLL that a legitimate application loads:`,
+        code: { lang: 'powershell', text: 'Invoke-AtomicTest T1574.001\n# expect rule 115002\nInvoke-AtomicTest T1574.001 -Cleanup' }
+      }
+    ]
+  },
+  {
+    id: 7,
+    title: 'Verify on Dashboard',
+    tag: 'Manager',
+    tagClass: 'tag-manager',
+    where: 'Browser — open Wazuh Dashboard',
+    goal: 'Confirm all alerts are visible on the Wazuh web dashboard.',
+    substeps: [
+      {
+        title: 'Open the Dashboard',
+        code: { lang: 'url', text: 'https://MANAGER_PRIVATE_IP' },
+        note: { type: 'info', text: 'Log in with your admin credentials.' }
+      },
+      {
+        title: 'Go to Security Events',
+        content: `Left sidebar → <strong>Threat Intelligence</strong> → <strong>Events</strong><br>Set time range (top right) to <strong>Today</strong> or <strong>Last 1 hour</strong>`
+      },
+      {
+        title: 'Search by rule ID',
+        content: `In the search bar, use these queries:`,
+        table: [
+          ['rule.id: 115001', 'Scheduled Task alert'],
+          ['rule.id: 115002', 'DLL Side-Loading'],
+          ['rule.id: 115003', 'Regsvr32'],
+          ['rule.id: 115004', 'Security Software Discovery'],
+          ['rule.id: 115005', 'UAC Bypass (high severity)']
+        ]
+      },
+      {
+        title: 'Search by MITRE technique',
+        code: { lang: 'kql', text: 'rule.mitre.id: T1548.002' }
+      },
+      {
+        title: 'See all Sysmon alerts',
+        code: { lang: 'kql', text: 'rule.groups: sysmon' }
+      },
+      {
+        title: 'View MITRE ATT&CK matrix',
+        content: `Left sidebar → <strong>Threat Intelligence</strong> → <strong>MITRE ATT&CK</strong><br>Detected techniques will be highlighted on the ATT&CK matrix.`,
+        verify: 'All 5 techniques should appear highlighted in the ATT&CK matrix view.'
+      }
+    ]
+  }
+];
+
+const ATTACK_TESTS = [
+  { tech: 'T1053.005', name: 'Scheduled Task', rule: '#115001', status: 'pending' },
+  { tech: 'T1218.010', name: 'Regsvr32 Proxy Exec', rule: '#115003', status: 'pending' },
+  { tech: 'T1518.001', name: 'Security SW Discovery', rule: '#115004', status: 'pending' },
+  { tech: 'T1548.002', name: 'Bypass UAC (Priv Esc)', rule: '#115005', status: 'pending' },
+  { tech: 'T1574.001', name: 'DLL Side-Loading', rule: '#115002', status: 'pending' }
+];
+
+const RESULT_CHECKS = [
+  { title: 'Syslog on Port 514', detail: 'wazuh-remoted listening', key: 'syslog' },
+  { title: 'Sysmon Installed', detail: 'Service: Running', key: 'sysmon' },
+  { title: 'Agent Forwarding', detail: 'eventchannel localfile', key: 'fwd' },
+  { title: 'ART Framework', detail: 'C:\\AtomicRedTeam\\', key: 'art' },
+  { title: 'Custom Rules Loaded', detail: 'IDs 115001–115005', key: 'rules' },
+  { title: 'ATT&CK Tests Run', detail: '5/5 techniques', key: 'tests' }
+];
+
+let currentStep = 0;
+let completedSteps = new Set();
+let attackStatuses = ATTACK_TESTS.map(a => ({ ...a }));
+
+function renderNav() {
+  const nav = document.getElementById('steps-nav');
+  nav.innerHTML = STEPS.map((s, i) => `
+    <button class="step-btn ${i === currentStep ? 'active' : ''} ${completedSteps.has(i) ? 'completed' : ''}" onclick="goToStep(${i})">
+      <div class="step-num">${completedSteps.has(i) ? '✓' : s.id}</div>
+      <div class="step-label">${s.title}</div>
+      <span class="step-tag ${s.tagClass}">${s.tag}</span>
+    </button>
+  `).join('');
+}
+
+function renderDots() {
+  const row = document.getElementById('dots-row');
+  row.innerHTML = STEPS.map((s, i) => `
+    <div class="dot ${completedSteps.has(i) ? 'done' : i === currentStep ? 'active' : ''}" onclick="goToStep(${i})" title="Step ${s.id}"></div>
+  `).join('');
+}
+
+function renderProgress() {
+  const pct = Math.round((completedSteps.size / STEPS.length) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = `${completedSteps.size} / ${STEPS.length} steps`;
+}
+
+function renderContent() {
+  const s = STEPS[currentStep];
+  document.getElementById('panel-title').textContent = `Step ${s.id} — ${s.title}`;
+  document.getElementById('panel-badge').textContent = `STEP ${s.id} OF 7`;
+
+  let html = '';
+
+  // Where box
+  html += `<div class="where-box"><strong>Where to do this</strong>${s.where}</div>`;
+  if (s.goal) html += `<p style="font-size:13px;color:var(--text2);margin-bottom:1rem;"><strong style="color:var(--text)">Goal:</strong> ${s.goal}</p>`;
+
+  // Top note
+  if (s.note_top) html += renderNote(s.note_top);
+
+  // Substeps
+  s.substeps.forEach((sub, i) => {
+    html += `<div class="substep">`;
+    html += `<div class="substep-title"><span class="num">${s.id}.${i+1}</span> ${sub.title}</div>`;
+    if (sub.content) html += `<p>${sub.content}</p>`;
+    if (sub.note) html += renderNote(sub.note);
+    if (sub.xml) html += `<div class="xml-block">${sub.xml}</div>`;
+    if (sub.code) html += renderCode(sub.code, `code-${currentStep}-${i}`);
+    if (sub.table) html += renderTable(sub.table);
+    if (sub.verify) html += `<div class="verify-box"><div class="vt">✓ Expected Result</div><p>${sub.verify}</p></div>`;
+    html += `</div>`;
+  });
+
+  // Bottom nav
+  const isDone = completedSteps.has(currentStep);
+  html += `<button class="mark-done-btn ${isDone ? 'done' : ''}" onclick="markDone(${currentStep})">
+    ${isDone ? '✓ Step Completed' : '✔ Mark Step as Done'}
+  </button>`;
+
+  html += `<div class="nav-row">
+    <button class="nav-btn" onclick="prevStep()" ${currentStep === 0 ? 'disabled' : ''}>← Previous</button>
+    <button class="nav-btn primary" onclick="nextStep()" ${currentStep === STEPS.length - 1 ? 'disabled' : ''}>Next Step →</button>
+  </div>`;
+
+  document.getElementById('panel-body').innerHTML = html;
+}
+
+function renderNote(n) {
+  return `<div class="note-box ${n.type}"><strong>${n.type === 'danger' ? '⚠ Warning' : n.type === 'warn' ? '⚠ Note' : 'ℹ Info'}</strong>${n.text}</div>`;
+}
+
+function renderCode(c, id) {
+  return `<div class="code-block">
+    <div class="code-header">
+      <span class="lang">${c.lang}</span>
+      <button class="copy-btn" id="btn-${id}" onclick="copyCode(this, '${id}')">copy</button>
+    </div>
+    <div class="code-body" id="${id}">${c.text}</div>
+  </div>`;
+}
+
+function renderTable(rows) {
+  let html = `<table class="data-table" style="margin-top:8px"><thead><tr>`;
+  if (rows[0].length === 3) {
+    html += `<th>Tag/Field</th><th>What to put here</th><th>Example</th>`;
+  } else {
+    html += `<th>Query</th><th>What it finds</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+  rows.forEach(r => {
+    html += `<tr>${r.map(c => `<td><code>${c}</code></td>`).join('')}</tr>`;
+  });
+  html += `</tbody></table>`;
+  return html;
+}
+
+function copyCode(btn, id) {
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function markDone(idx) {
+  completedSteps.add(idx);
+  renderAll();
+  updateResultSection();
+}
+
+function goToStep(idx) {
+  currentStep = idx;
+  renderAll();
+}
+
+function nextStep() { if (currentStep < STEPS.length - 1) { currentStep++; renderAll(); } }
+function prevStep() { if (currentStep > 0) { currentStep--; renderAll(); } }
+
+function renderAll() {
+  renderNav();
+  renderDots();
+  renderProgress();
+  renderContent();
+}
+
+function updateResultSection() {
+  const section = document.getElementById('test-result-section');
+  section.classList.remove('hidden');
+
+  const done = completedSteps.size;
+  const pct = Math.round((done / STEPS.length) * 100);
+
+  document.getElementById('score-pct').textContent = pct + '%';
+  document.getElementById('result-timestamp').textContent = new Date().toLocaleString();
+
+  let grade = 'F';
+  if (pct >= 90) grade = 'A';
+  else if (pct >= 75) grade = 'B';
+  else if (pct >= 60) grade = 'C';
+  else if (pct >= 40) grade = 'D';
+
+  document.getElementById('score-title').textContent = 
+    done === 7 ? 'Lab Completed Successfully!' : `In Progress — ${done}/7 Steps Done`;
+  document.getElementById('score-desc').textContent =
+    done === 7 ? 'All steps finished. ATT&CK emulation and detection verified.' : 
+    `${7 - done} step(s) remaining. Keep going!`;
+
+  document.getElementById('sm-steps').textContent = `${done}/7 steps`;
+  document.getElementById('sm-detections').textContent = `${Math.min(done >= 6 ? 5 : done >= 5 ? 4 : done, 5)}/5 detections`;
+  document.getElementById('sm-grade').textContent = `Grade: ${grade}`;
+
+  // Result grid
+  let passCount = 0, failCount = 0, pendingCount = 0;
+  let gridHTML = '';
+  RESULT_CHECKS.forEach((c, i) => {
+    const stepMap = { syslog: 0, sysmon: 1, fwd: 2, art: 3, rules: 4, tests: 5 };
+    const stepIdx = stepMap[c.key];
+    const status = completedSteps.has(stepIdx) ? 'pass' : done > stepIdx ? 'fail' : 'warn';
+    const label = status === 'pass' ? 'PASS' : status === 'fail' ? 'FAIL' : 'PENDING';
+    if (status === 'pass') passCount++;
+    else if (status === 'fail') failCount++;
+    else pendingCount++;
+    gridHTML += `<div class="result-item ${status}">
+      <div class="ri-top">
+        <div class="ri-title">${c.title}</div>
+        <span class="ri-status ${status}">${label}</span>
+      </div>
+      <div class="ri-detail">${c.detail}</div>
+    </div>`;
+  });
+  document.getElementById('result-grid').innerHTML = gridHTML;
+  document.getElementById('sf-pass').textContent = passCount;
+  document.getElementById('sf-fail').textContent = failCount;
+  document.getElementById('sf-steps').textContent = done;
+  document.getElementById('sf-pending').textContent = pendingCount;
+
+  // Attack rows
+  let arHTML = '';
+  ATTACK_TESTS.forEach((a, i) => {
+    const status = done >= 6 ? 'detected' : done >= 4 && i < done - 4 ? 'detected' : 'pending';
+    const label = status === 'detected' ? 'DETECTED' : status === 'missed' ? 'MISSED' : 'PENDING';
+    arHTML += `<div class="ar-row">
+      <span class="ar-tech">${a.tech}</span>
+      <span class="ar-name">${a.name}</span>
+      <span class="ar-rule">${a.rule}</span>
+      <span class="ar-badge ${status}">${label}</span>
+    </div>`;
+  });
+  document.getElementById('attack-rows').innerHTML = arHTML;
+
+  // Timeline
+  const tlLabels = [
+    'Syslog configured on Manager',
+    'Sysmon installed on Windows',
+    'Agent forwarding configured',
+    'Atomic Red Team installed',
+    'Detection rules added',
+    'ATT&CK tests executed',
+    'Alerts verified on Dashboard'
+  ];
+  let tlHTML = '';
+  STEPS.forEach((s, i) => {
+    const cls = completedSteps.has(i) ? 'done' : i === currentStep ? 'active' : '';
+    const time = completedSteps.has(i) ? new Date().toLocaleTimeString() : '—';
+    tlHTML += `<div class="tl-item ${cls}">
+      <div class="tl-time">${time}</div>
+      <div class="tl-text"><strong>Step ${s.id}:</strong> ${tlLabels[i]}</div>
+    </div>`;
+  });
+  document.getElementById('timeline-rows').innerHTML = tlHTML;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['summary','attacks','timeline'][i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// INIT
+renderAll();
+</script>
+</body>
+</html>
